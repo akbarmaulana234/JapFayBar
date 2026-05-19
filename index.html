@@ -5,14 +5,422 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Monitoring System | Realtime Dashboard</title>
   <meta name="description" content="Sistem monitoring sensor realtime berbasis Firebase dengan tampilan modern dan elegan." />
-  <link rel="stylesheet" href="css/style.css" />
+  
+  <style>
+    /* ==========================================================================
+       1. RESET & VARIABLE DASAR
+       ========================================================================== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    html {
+      scroll-behavior: smooth; /* Efek scroll halus tanpa JS */
+    }
+
+    body {
+      background-color: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      width: 90%;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* ==========================================================================
+       2. NAVBAR (STICKY & INTERAKTIF)
+       ========================================================================== */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background-color: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px); /* Efek kaca transparan */
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      padding: 15px 0;
+      transition: all 0.3s ease;
+    }
+
+    .nav-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: #111;
+      font-size: 1.2rem;
+    }
+
+    .logo img {
+      height: 30px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      list-style: none;
+      gap: 25px;
+    }
+
+    .nav-links a:not(.btn) {
+      text-decoration: none;
+      color: #555;
+      font-weight: 500;
+      position: relative;
+      transition: color 0.3s ease;
+    }
+
+    /* Efek Hover Menu Navigasi */
+    .nav-links a:not(.btn):hover,
+    .nav-links a.active {
+      color: #007bff;
+    }
+
+    .nav-links a:not(.btn)::after {
+      content: '';
+      position: absolute;
+      width: 0;
+      height: 2px;
+      bottom: -5px;
+      left: 0;
+      background-color: #007bff;
+      transition: width 0.3s ease;
+    }
+
+    .nav-links a:not(.btn):hover::after {
+      width: 100%;
+    }
+
+    /* ==========================================================================
+       3. TOMBOL / BUTTONS
+       ========================================================================== */
+    .btn {
+      display: inline-block;
+      text-decoration: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+      background-color: #007bff;
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background-color: #0056b3;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
+    }
+
+    .btn-ghost {
+      border: 2px solid #007bff;
+      color: #007bff;
+    }
+
+    .btn-ghost:hover {
+      background-color: rgba(0, 123, 255, 0.05);
+      transform: translateY(-2px);
+    }
+
+    .btn-lg {
+      padding: 14px 28px;
+      font-size: 1rem;
+    }
+
+    /* ==========================================================================
+       4. HERO SECTION & SIMULASI SENSOR (ANIMASI)
+       ========================================================================== */
+    .hero {
+      padding: 80px 0;
+      background: linear-gradient(135deg, #fff 0%, #e9ecef 100%);
+    }
+
+    .hero-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 50px;
+    }
+
+    .hero-text {
+      flex: 1;
+    }
+
+    .badge {
+      display: inline-block;
+      background-color: rgba(0, 123, 255, 0.1);
+      color: #007bff;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .hero-text h1 {
+      font-size: 2.8rem;
+      line-height: 1.2;
+      margin-bottom: 20px;
+      color: #111;
+    }
+
+    .gradient-text {
+      background: linear-gradient(45deg, #007bff, #00c6ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-text p {
+      font-size: 1.1rem;
+      color: #666;
+      margin-bottom: 30px;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 15px;
+    }
+
+    .hero-visual {
+      flex: 1;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      align-items: flex-end;
+    }
+
+    /* Floating Card & Animasi Suhu */
+    .floating-card {
+      background: #fff;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      width: 240px;
+      transition: transform 0.3s ease;
+    }
+
+    .floating-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .floating-card img {
+      width: 40px;
+      height: 40px;
+    }
+
+    .floating-card small {
+      color: #888;
+      display: block;
+    }
+
+    /* TRIK CSS ONLY: Animasi pergantian teks angka suhu */
+    .live-temp span {
+      font-size: 0; /* Sembunyikan teks asli bawaan HTML */
+    }
+
+    .live-temp span::after {
+      font-size: 1.5rem;
+      font-weight: bold;
+      content: "27.4°C";
+      animation: simulasiSuhu 9s infinite;
+    }
+
+    @keyframes simulasiSuhu {
+      0%, 33% { content: "27.4°C"; }
+      34%, 66% { content: "28.2°C"; }
+      67%, 100% { content: "26.9°C"; }
+    }
+
+    /* Animasi Denyut Lampu Status Online */
+    .dot.online {
+      width: 12px;
+      height: 12px;
+      background-color: #28a745;
+      border-radius: 50%;
+      position: relative;
+    }
+
+    .dot.online::before {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background-color: #28a745;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+      left: 0;
+      top: 0;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 0.6; }
+      100% { transform: scale(2.5); opacity: 0; }
+    }
+
+    /* ==========================================================================
+       5. FEATURES SECTION (HOVER CARD)
+       ========================================================================== */
+    .features {
+      padding: 80px 0;
+      background-color: #fff;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    .section-header h2 {
+      font-size: 2.2rem;
+      margin-bottom: 10px;
+    }
+
+    .section-header p {
+      color: #666;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 30px;
+    }
+
+    .feature-card {
+      background: #f8f9fa;
+      padding: 30px;
+      border-radius: 12px;
+      border: 1px solid #eee;
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    /* Efek Interaksi saat Kartu Fitur di-Hover */
+    .feature-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 15px 30px rgba(0,0,0,0.08);
+      border-color: #007bff;
+    }
+
+    .feature-icon {
+      font-size: 2rem;
+      margin-bottom: 15px;
+      display: inline-block;
+      transition: transform 0.3s ease;
+    }
+
+    .feature-card:hover .feature-icon {
+      transform: scale(1.2);
+    }
+
+    .feature-card h3 {
+      margin-bottom: 10px;
+      font-size: 1.25rem;
+    }
+
+    .feature-card p {
+      color: #666;
+      font-size: 0.95rem;
+    }
+
+    /* ==========================================================================
+       6. ABOUT SECTION
+       ========================================================================== */
+    .about {
+      padding: 80px 0;
+      background-color: #f8f9fa;
+    }
+
+    .about-grid {
+      display: flex;
+      align-items: center;
+      gap: 50px;
+    }
+
+    .about-grid > div {
+      flex: 1;
+    }
+
+    .about h2 {
+      font-size: 2.2rem;
+      margin-bottom: 20px;
+    }
+
+    .about p {
+      color: #666;
+      margin-bottom: 20px;
+    }
+
+    .check-list {
+      list-style: none;
+    }
+
+    .check-list li {
+      margin-bottom: 10px;
+      font-weight: 500;
+      color: #28a745;
+    }
+
+    .about-img img {
+      width: 100%;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+
+    /* ==========================================================================
+       7. FOOTER
+       ========================================================================== */
+    footer {
+      background-color: #111;
+      color: #888;
+      padding: 30px 0;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+
+    /* ==========================================================================
+       8. RESPONSIVE DESIGN (MOBILE FRIENDLY)
+       ========================================================================== */
+    @media (max-width: 768px) {
+      .hero-content, .about-grid {
+        flex-direction: column;
+        text-align: center;
+      }
+      .hero-actions {
+        justify-content: center;
+      }
+      .hero-visual {
+        align-items: center;
+      }
+      .nav-links {
+        display: none; /* Menyederhanakan navbar di mobile view */
+      }
+    }
+  </style>
 </head>
 <body>
+
   <!-- Navbar -->
   <header class="navbar">
     <div class="container nav-container">
       <a href="index.html" class="logo">
-        <img src="img/logo.png" alt="Logo" />
+        <!-- Menggunakan placeholder gambar jika file lokal belum ada -->
+        <img src="https://via.placeholder.com/30/007bff/fff?text=IoT" alt="Logo" />
         <span>Monitoring<strong>IoT</strong></span>
       </a>
       <nav>
@@ -31,7 +439,7 @@
     <div class="container hero-content">
       <div class="hero-text">
         <span class="badge">Realtime · Firebase · IoT</span>
-        <h1>Pantau Sensor Anda <span class="gradient-text">Kapan Saja, Di Mana Saja</span></h1>
+        <h1>Pantau Sensor Anda <span class="gradient-text">Kapan Saja, Di Mana Saji</span></h1>
         <p>Sistem monitoring berbasis cloud yang memungkinkan Anda melihat data sensor secara langsung dengan visualisasi yang elegan dan responsif.</p>
         <div class="hero-actions">
           <a href="login.html" class="btn btn-primary btn-lg">Mulai Sekarang</a>
@@ -40,10 +448,11 @@
       </div>
       <div class="hero-visual">
         <div class="floating-card card-1">
-          <img src="img/icon-sensor.png" alt="Sensor" />
+          <img src="https://via.placeholder.com/40/007bff/fff?text=°C" alt="Sensor" />
           <div>
             <small>Suhu Ruangan</small>
-            <h3>27.4°C</h3>
+            <!-- Menggunakan struktur span untuk efek animasi berganti angka -->
+            <h3 class="live-temp"><span>27.4°C</span></h3>
           </div>
         </div>
         <div class="floating-card card-2">
@@ -53,7 +462,6 @@
             <h3>Online</h3>
           </div>
         </div>
-        <div class="hero-glow"></div>
       </div>
     </div>
   </section>
@@ -103,14 +511,17 @@
         </ul>
       </div>
       <div class="about-img">
-        <img src="img/background.jpg" alt="Tentang" />
+        <img src="https://via.placeholder.com/500x300/e9ecef/666?text=Dashboard+IoT+Preview" alt="Tentang" />
       </div>
     </div>
   </section>
 
-  <!-- Footer -->
-  <div id="footer-placeholder"></div>
+  <!-- Footer (Placeholder diganti langsung dengan tag footer asli) -->
+  <footer>
+    <div class="container">
+      <p>&copy; 2026 MonitoringIoT. All Rights Reserved.</p>
+    </div>
+  </footer>
 
-  <script src="js/main.js"></script>
 </body>
 </html>
